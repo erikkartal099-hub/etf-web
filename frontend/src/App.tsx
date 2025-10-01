@@ -98,8 +98,8 @@ function App() {
               />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-              {/* Protected routes */
+              
+              {/* Protected routes */}
               <Route
                 path="/dashboard"
                 element={
@@ -164,7 +164,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
+              
               {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
