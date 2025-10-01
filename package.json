@@ -9,6 +9,11 @@
     "test": "cd frontend && npm run test",
     "vercel-build": "cd frontend && npm install && npm run build"
   },
+  "keywords": [
+    "crypto",
+    "etf",
+    "investment",
+    "blockchain",
     "supabase",
     "react"
   ],
@@ -16,6 +21,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/coindesk-etf-grayscale"
+    "url": "https://github.com/erikkartal099-hub/etf-web"
   }
 }
