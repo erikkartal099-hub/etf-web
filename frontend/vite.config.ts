@@ -16,6 +16,27 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: process.env.VITE_APP_ENV !== 'production',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: process.env.VITE_APP_ENV === 'production',
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'chart-vendor': ['chart.js', 'react-chartjs-2'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  preview: {
+    port: 4173,
+    host: true,
   },
 })
