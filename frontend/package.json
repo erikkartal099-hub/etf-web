@@ -11,9 +11,11 @@
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:e2e": "playwright test",
+    "test:pwa": "lighthouse http://localhost:5173 --view --preset=desktop",
     "deploy:preview": "vercel",
     "deploy:prod": "vercel --prod",
-    "vercel-build": "npm run build"
+    "vercel-build": "npm run build",
+    "db:migrate": "cd ../supabase && supabase db push"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

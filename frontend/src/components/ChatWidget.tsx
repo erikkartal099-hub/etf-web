@@ -66,7 +66,8 @@ export default function ChatWidget() {
     }
   }
 
-  const sendMessage = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!input.trim() || loading) return
 
     const userMessage: Message = {
@@ -80,6 +81,21 @@ export default function ChatWidget() {
     setLoading(true)
 
     try {
+      // Fetch user context for personalized insights
+      let userContext = {}
+      if (user) {
+        const [profileData, portfolioData] = await Promise.all([
+          supabase.from('profiles').select('kyc_status, kyc_risk_score').eq('id', user.id).single(),
+          supabase.from('portfolios').select('*').eq('user_id', user.id).single(),
+        ])
+        
+        userContext = {
+          kycStatus: profileData.data?.kyc_status,
+          riskScore: profileData.data?.kyc_risk_score,
+          portfolio: portfolioData.data,
+        }
+      }
+
       // Call Supabase Edge Function (proxy for xAI Grok API)
       const { data: session } = await supabase.auth.getSession()
       const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('/rest/v1', '/functions/v1')
@@ -94,6 +110,7 @@ export default function ChatWidget() {
           messages: [...messages, userMessage],
           userId: user?.id,
           sessionId,
+          context: userContext, // Add personalization context
         }),
       })
 
@@ -131,7 +148,7 @@ export default function ChatWidget() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      handleSubmit(e as any)
     }
   }
 
@@ -229,7 +246,7 @@ export default function ChatWidget() {
                 maxLength={500}
               />
               <button
-                onClick={sendMessage}
+                onClick={(e) => handleSubmit(e as any)}
                 disabled={!input.trim() || loading}
                 className="px-4 py-2 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center space-x-2"
               >

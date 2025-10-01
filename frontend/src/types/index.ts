@@ -3,6 +3,7 @@
 export interface User {
   id: string
   email: string
+  email_confirmed_at?: string
   full_name?: string
   wallet_address?: string
   referral_path?: string
@@ -42,9 +43,12 @@ export interface Transaction {
   id: string
   user_id: string
   type: 'deposit' | 'withdrawal' | 'referral_bonus' | 'staking_reward' | 'airdrop' | 'bonus'
+  transaction_type: 'deposit' | 'withdrawal' | 'referral_bonus' | 'staking_reward' | 'airdrop' | 'bonus'
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
   crypto_type: 'ETH' | 'BTC' | 'ETF'
+  currency: 'ETH' | 'BTC' | 'ETF'
   crypto_amount: number
+  amount: number
   usd_value: number
   tx_hash?: string
   wallet_address?: string
@@ -110,7 +114,9 @@ export interface Incentive {
 }
 
 export interface CryptoPrice {
+  id?: string
   symbol: string
+  name?: string
   price_usd: number
   price_change_24h: number
   market_cap?: number
