@@ -24,17 +24,28 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 4. RLS blocks the insert (no policy allows it)
 5. Error: "new row violates row-level security policy"
 
+### Additional Issue Found:
+```
+Error: "Could not find the 'referred_by' column of 'users' in the schema cache"
+```
+- Schema cache issue where migrations weren't applied in correct order
+- Functions referencing missing columns
+
 ---
 
 ## ✅ Solution Applied
 
-### Migration Created: `009_fix_user_signup_rls.sql`
+### Migration Created: `009_fix_user_signup_rls.sql` (UPDATED)
 
 **What It Does:**
-1. Recreates trigger functions with `SECURITY DEFINER` (bypasses RLS)
-2. Adds INSERT policy for user signup
-3. Creates `handle_new_user()` function for auth triggers
-4. Adds trigger on `auth.users` table
+1. **Handles schema cache issues** - Checks if `referred_by` column exists
+2. **Adds missing column** if not present
+3. **Recreates trigger functions** with `SECURITY DEFINER` (bypasses RLS)
+4. **Adds robust error handling** - Gracefully handles missing functions/columns
+5. **Adds INSERT policies** for user signup
+6. **Creates `handle_new_user()` function** for auth triggers
+7. **Adds trigger** on `auth.users` table
+8. **Includes verification** - Shows policy count after applying
 
 ---
 
@@ -95,6 +106,7 @@ const { data, error } = await supabase.auth.signUp({
 })
 
 # Should succeed without RLS error
+# Should also create: portfolio, referral records, etc.
 ```
 
 ### 2. Check Database
@@ -121,6 +133,27 @@ FROM pg_trigger
 WHERE tgrelid = 'auth.users'::regclass;
 
 -- Should see: on_auth_user_created
+```
+
+### 4. Check Column Exists
+
+```sql
+-- Verify referred_by column exists
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'users' 
+AND column_name = 'referred_by';
+
+-- Should show: referred_by | uuid
+```
+
+### 5. Check Migration Output
+
+```sql
+-- Migration should show these notices:
+-- NOTICE:  RLS Fix Applied: 2 INSERT policies now exist for users table
+-- NOTICE:  User signup should now work correctly
+-- NOTICE:  Added missing referred_by column (if it was missing)
 ```
 
 ---
@@ -227,7 +260,15 @@ WHERE tgrelid = 'public.users'::regclass;
 - Does NOT affect frontend (uses anon key)
 ```
 
-### 3. Auth Flow
+### 3. Schema Cache Handling
+```
+- Migration checks if columns exist before using them
+- Adds missing columns automatically
+- Gracefully handles missing functions
+- Prevents errors due to migration order issues
+```
+
+### 4. Auth Flow
 ```
 1. User fills signup form
 2. Frontend calls: supabase.auth.signUp()
@@ -268,16 +309,52 @@ SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 -- Should return 1 row
 ```
 
+**Check 5: Does referred_by column exist?**
+```sql
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'users' AND column_name = 'referred_by';
+-- Should return 1 row
+```
+
 ### Manual Fix (If migration fails):
 
 ```sql
--- 1. Add INSERT policy
-CREATE POLICY "Allow user creation from auth"
+-- 1. Add missing column if needed
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES public.users(id);
+
+-- 2. Add INSERT policies
+CREATE POLICY IF NOT EXISTS "Allow user creation from auth"
   ON public.users
   FOR INSERT
   WITH CHECK (auth.uid() = id);
 
--- 2. Test signup again
+CREATE POLICY IF NOT EXISTS "Service role can insert users"
+  ON public.users
+  FOR INSERT
+  TO service_role
+  WITH CHECK (true);
+
+-- 3. Create auth trigger function
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.users (id, email, full_name, created_at)
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Create trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- 5. Test signup again
 ```
 
 ---
@@ -288,13 +365,23 @@ CREATE POLICY "Allow user creation from auth"
 - ✅ Signup completes without errors
 - ✅ User record created in `public.users`
 - ✅ Portfolio automatically created
+- ✅ Referral records created (if referred)
+- ✅ Notifications sent (if referred)
 - ✅ User can login
 - ✅ Dashboard loads with data
+- ✅ All triggers fire successfully
 
 **Test account:**
 ```
 Email: test@example.com
 Password: TestPassword123!
+```
+
+**Migration output should show:**
+```
+NOTICE:  RLS Fix Applied: 2 INSERT policies now exist for users table
+NOTICE:  User signup should now work correctly
+NOTICE:  Added missing referred_by column (if it was missing)
 ```
 
 ---
