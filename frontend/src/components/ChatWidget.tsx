@@ -84,7 +84,7 @@ export default function ChatWidget() {
       const { data: session } = await supabase.auth.getSession()
       const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('/rest/v1', '/functions/v1')
 
-      const response = await fetch(`${FUNCTIONS_URL}/groq-chat-proxy`, {
+      const response = await fetch(`${FUNCTIONS_URL}/grok-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

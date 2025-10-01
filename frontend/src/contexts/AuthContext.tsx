@@ -88,16 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     referralCode?: string
   ) {
     try {
-      // Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (authError) throw authError
-      if (!authData.user) throw new Error('Failed to create user')
-
-      // Find referrer by referral code
+      // Find referrer by referral code (if provided)
       let referrerId = null
       if (referralCode) {
         const { data: referrer } = await supabase
@@ -109,15 +100,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         referrerId = referrer?.id
       }
 
-      // Create user profile
-      const { error: profileError } = await supabase.from('users').insert({
-        id: authData.user.id,
+      // Sign up with Supabase Auth - the trigger will automatically create the user profile
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        full_name: fullName,
-        referred_by: referrerId,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            referred_by: referrerId, // Pass referrer info in metadata
+          }
+        }
       })
 
-      if (profileError) throw profileError
+      if (authError) throw authError
+      if (!authData.user) throw new Error('Failed to create user')
 
       toast.success('Account created successfully! Please check your email to verify.')
     } catch (error: any) {
