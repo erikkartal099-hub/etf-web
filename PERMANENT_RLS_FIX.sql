@@ -27,7 +27,10 @@ DROP FUNCTION IF EXISTS public.create_user_portfolio();
 DROP FUNCTION IF EXISTS public.create_referral_record();
 DROP FUNCTION IF EXISTS public.create_upline_referral_records();
 
-RAISE NOTICE '✅ Cleaned up all existing policies, triggers, and functions';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Cleaned up all existing policies, triggers, and functions';
+END $$;
 
 -- =====================================================
 -- STEP 2: ENSURE RLS IS ENABLED
@@ -35,7 +38,10 @@ RAISE NOTICE '✅ Cleaned up all existing policies, triggers, and functions';
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
-RAISE NOTICE '✅ RLS enabled on users table';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ RLS enabled on users table';
+END $$;
 
 -- =====================================================
 -- STEP 3: CREATE COMPREHENSIVE INSERT POLICIES
@@ -62,7 +68,10 @@ CREATE POLICY "Allow anonymous user creation"
   TO anon
   WITH CHECK (true);
 
-RAISE NOTICE '✅ Created 3 comprehensive INSERT policies';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Created 3 comprehensive INSERT policies';
+END $$;
 
 -- =====================================================
 -- STEP 4: CREATE AUTH TRIGGER FUNCTION
@@ -102,7 +111,10 @@ EXCEPTION WHEN others THEN
 END;
 $$ LANGUAGE plpgsql;
 
-RAISE NOTICE '✅ Created handle_new_user function';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Created handle_new_user function';
+END $$;
 
 -- =====================================================
 -- STEP 5: CREATE AUTH TRIGGER
@@ -113,7 +125,10 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
-RAISE NOTICE '✅ Created auth trigger';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Created auth trigger';
+END $$;
 
 -- =====================================================
 -- STEP 6: CREATE PORTFOLIO TRIGGER
@@ -152,7 +167,10 @@ CREATE TRIGGER create_portfolio_on_user_signup
   FOR EACH ROW
   EXECUTE FUNCTION public.create_user_portfolio();
 
-RAISE NOTICE '✅ Created portfolio trigger';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Created portfolio trigger';
+END $$;
 
 -- =====================================================
 -- STEP 7: CREATE SELECT/UPDATE POLICIES FOR EXISTING USERS
@@ -173,7 +191,10 @@ CREATE POLICY "Users can update own data"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
-RAISE NOTICE '✅ Created SELECT/UPDATE policies';
+DO $$
+BEGIN
+  RAISE NOTICE '✅ Created SELECT/UPDATE policies';
+END $$;
 
 -- =====================================================
 -- STEP 8: VERIFICATION - Check all components
