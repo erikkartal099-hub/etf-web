@@ -1,0 +1,29 @@
+{
+  "name": "coindesk-crypto5-etf",
+  "version": "1.0.0",
+  "description": "CoinDesk Crypto 5 ETF Investment Platform",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "install:all": "cd frontend && npm install",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
+  },
+  "keywords": [
+    "crypto",
+    "etf",
+    "investment",
+    "blockchain",
+    "supabase",
+    "react"
+  ],
+  "author": "CoinDesk ETF Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/coindesk-etf-grayscale"
+  }
+}

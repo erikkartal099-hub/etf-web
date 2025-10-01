@@ -1,0 +1,194 @@
+{
+  "name": "CoinDesk Crypto 5 ETF Platform",
+  "baseUrl": "http://localhost:5173",
+  "apiKey": "sk-user-svU5clEuoC0YNeJiTYDpc51bwFB4It-ZsJGWxfHfqgNy2aaGlopgDEssASAR8QalsaqBkWCB3h-TSwSdYmQycklxx9VIhrT0GfMitBcVFaov77GkRanU3rph57AQYKPxY1U",
+  "testSuites": [
+    {
+      "name": "Landing Page Tests",
+      "tests": [
+        {
+          "name": "Landing page loads successfully",
+          "url": "/",
+          "assertions": [
+            "Page title contains 'CoinDesk'",
+            "Get Started button is visible",
+            "Navigation menu is present"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication Flow",
+      "tests": [
+        {
+          "name": "Sign up flow",
+          "url": "/signup",
+          "steps": [
+            "Fill email with test@example.com",
+            "Fill password with TestPassword123!",
+            "Fill full name with Test User",
+            "Click sign up button",
+            "Verify redirect to login or dashboard"
+          ]
+        },
+        {
+          "name": "Login flow",
+          "url": "/login",
+          "steps": [
+            "Fill email with existing user",
+            "Fill password",
+            "Click login button",
+            "Verify dashboard loads"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Tests",
+      "tests": [
+        {
+          "name": "Dashboard displays correctly",
+          "url": "/dashboard",
+          "requiresAuth": true,
+          "assertions": [
+            "Total Value card is visible",
+            "ETF Tokens card is visible",
+            "Market Prices section shows",
+            "Quick action buttons present"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Deposit Flow",
+      "tests": [
+        {
+          "name": "Complete deposit flow",
+          "url": "/deposit",
+          "requiresAuth": true,
+          "steps": [
+            "Select ETH",
+            "Enter amount 0.1",
+            "Click Continue",
+            "Verify address generated",
+            "Copy address",
+            "Enter mock transaction hash",
+            "Click Confirm Deposit",
+            "Verify success message"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Withdrawal Flow",
+      "tests": [
+        {
+          "name": "Complete withdrawal flow",
+          "url": "/withdraw",
+          "requiresAuth": true,
+          "steps": [
+            "Select ETH",
+            "Enter amount 0.05",
+            "Enter valid ETH address",
+            "Verify fee calculation",
+            "Click Withdraw button",
+            "Verify success message"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Referral System",
+      "tests": [
+        {
+          "name": "Referral page functionality",
+          "url": "/referrals",
+          "requiresAuth": true,
+          "assertions": [
+            "Referral link is displayed",
+            "Copy button works",
+            "Bonus structure shows 5 levels",
+            "Stats display correctly"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Staking Tests",
+      "tests": [
+        {
+          "name": "Create staking position",
+          "url": "/staking",
+          "requiresAuth": true,
+          "steps": [
+            "Select 90 Days plan",
+            "Enter amount 100",
+            "Click Stake button",
+            "Verify position created",
+            "Check active positions display"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rewards Tests",
+      "tests": [
+        {
+          "name": "Rewards page displays",
+          "url": "/rewards",
+          "requiresAuth": true,
+          "assertions": [
+            "Loyalty points card visible",
+            "Milestone bonuses section present",
+            "Rewards history table shows"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Profile Tests",
+      "tests": [
+        {
+          "name": "Profile edit functionality",
+          "url": "/profile",
+          "requiresAuth": true,
+          "steps": [
+            "Click Edit button",
+            "Change full name",
+            "Click Save Changes",
+            "Verify update success"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Chat Tests",
+      "tests": [
+        {
+          "name": "AI chat functionality",
+          "url": "/",
+          "steps": [
+            "Click chat widget",
+            "Enter message 'What is the CoinDesk Crypto 5 ETF?'",
+            "Click send",
+            "Verify AI response received",
+            "Check response contains relevant info"
+          ]
+        }
+      ]
+    }
+  ],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "mobileViewport": {
+    "width": 375,
+    "height": 812
+  },
+  "testMobile": true,
+  "browsers": ["chromium", "webkit"],
+  "screenshots": true,
+  "video": true,
+  "retries": 2
+}
