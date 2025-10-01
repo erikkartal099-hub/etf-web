@@ -1,22 +1,14 @@
 {
   "name": "coindesk-crypto5-etf",
   "version": "1.0.0",
-  "description": "CoinDesk Crypto 5 ETF Investment Platform",
+  "description": "CoinDesk Crypto 5 ETF Platform by Grayscale Investment",
   "private": true,
   "scripts": {
+    "build": "cd frontend && npm install && npm run build",
     "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "preview": "cd frontend && npm run preview",
-    "install:all": "cd frontend && npm install",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status"
+    "test": "cd frontend && npm run test",
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
-  "keywords": [
-    "crypto",
-    "etf",
-    "investment",
-    "blockchain",
     "supabase",
     "react"
   ],
