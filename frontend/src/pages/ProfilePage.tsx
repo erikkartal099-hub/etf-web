@@ -37,6 +37,7 @@ export default function EnhancedProfilePage() {
     } finally {
       setLoading(false)
     }
+  }
 
   // KYC actions
   const startKyc = async () => {

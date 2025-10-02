@@ -5,7 +5,6 @@ import './styles/index.css'
 
 // Google Analytics (optional)
 const GA_TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
 
 if (GA_TRACKING_ID) {
   // Load Google Analytics
@@ -15,30 +14,25 @@ if (GA_TRACKING_ID) {
   document.head.appendChild(script)
 
   script.onload = () => {
-    window.dataLayer = window.dataLayer || []
+    ;(window as any).dataLayer = (window as any).dataLayer || []
     function gtag(...args: any[]) {
-      window.dataLayer.push(args)
+      ;(window as any).dataLayer.push(args)
     }
     gtag('js', new Date())
     gtag('config', GA_TRACKING_ID)
   }
 }
 
-// Sentry (optional) - dynamically loaded to avoid hard dependency
+// Optional Sentry hint (no package installed by default)
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
 if (SENTRY_DSN) {
-  (async () => {
-    try {
-      const Sentry = await import('@sentry/react')
-      const { BrowserTracing } = await import('@sentry/tracing')
-      Sentry.init({
-        dsn: SENTRY_DSN,
-        integrations: [new BrowserTracing()],
-        tracesSampleRate: 0.2, // adjust in production
-      })
-    } catch (e) {
-      console.warn('Sentry not initialized:', e)
-    }
-  })()
+  // eslint-disable-next-line no-console
+  console.info(
+    '\nSentry DSN detected. To enable Sentry later, install @sentry/react and initialize it in main.tsx.\n' +
+      'Example:\n' +
+      "  import * as Sentry from '@sentry/react'\n" +
+      '  Sentry.init({ dsn: import.meta.env.VITE_SENTRY_DSN })\n'
+  )
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

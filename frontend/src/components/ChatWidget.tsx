@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -28,6 +27,37 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // n8n webhook configuration (env configurable with a safe fallback)
+  const N8N_WEBHOOK =
+    import.meta.env.VITE_N8N_SORA_WEBHOOK ||
+    'https://n8n.odia.dev/webhook/7ea0ea7f-d542-4f94-ba78-c496b762abf2'
+
+  // Send user message to n8n webhook and await assistant reply
+  async function requestAssistantReply(payload: Record<string, any>) {
+    if (!N8N_WEBHOOK) throw new Error('Webhook URL not configured')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    try {
+      const res = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+      if (!res.ok) throw new Error(`Webhook error ${res.status}`)
+      const text = await res.text()
+      // Try JSON first; fallback to plain text
+      try {
+        const json = JSON.parse(text)
+        return json
+      } catch {
+        return { message: text }
+      }
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -40,31 +70,7 @@ export default function ChatWidget() {
     }
   }, [isOpen])
 
-  // Load chat history for authenticated users
-  useEffect(() => {
-    if (user && isOpen) {
-      loadChatHistory()
-    }
-  }, [user, isOpen])
-
-  const loadChatHistory = async () => {
-    if (!user) return
-
-    try {
-      const { data, error } = await supabase
-        .from('chats')
-        .select('messages')
-        .eq('user_id', user.id)
-        .eq('session_id', sessionId)
-        .single()
-
-      if (!error && data?.messages) {
-        setMessages(data.messages as Message[])
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error)
-    }
-  }
+  // No remote history fetch; keep chat session local and ephemeral
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,48 +87,25 @@ export default function ChatWidget() {
     setLoading(true)
 
     try {
-      // Fetch user context for personalized insights
-      let userContext = {}
-      if (user) {
-        const [profileData, portfolioData] = await Promise.all([
-          supabase.from('profiles').select('kyc_status, kyc_risk_score').eq('id', user.id).single(),
-          supabase.from('portfolios').select('*').eq('user_id', user.id).single(),
-        ])
-        
-        userContext = {
-          kycStatus: profileData.data?.kyc_status,
-          riskScore: profileData.data?.kyc_risk_score,
-          portfolio: portfolioData.data,
-        }
-      }
-
-      // Call Supabase Edge Function (proxy for xAI Grok API)
-      const { data: session } = await supabase.auth.getSession()
-      const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('/rest/v1', '/functions/v1')
-
-      const response = await fetch(`${FUNCTIONS_URL}/grok-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          userId: user?.id,
-          sessionId,
-          context: userContext, // Add personalization context
-        }),
+      // Send to n8n webhook and expect a response
+      const resp = await requestAssistantReply({
+        source: 'sora-widget',
+        event: 'chat',
+        userId: user?.id || null,
+        sessionId,
+        message: userMessage.content,
+        history: messages,
+        path: window.location.pathname,
+        origin: window.location.origin,
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to get response from Sora')
-      }
-
-      const data = await response.json()
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.message || data.fallback || "I'm having trouble responding right now.",
+        content:
+          resp?.message ||
+          resp?.reply ||
+          resp?.text ||
+          "I'm having trouble responding right now.",
         timestamp: new Date().toISOString(),
       }
 

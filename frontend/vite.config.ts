@@ -2,16 +2,32 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
+// Lightweight plugin to log the actual dev server URL/port
+function portLogger() {
+  return {
+    name: 'port-logger',
+    configureServer(server: any) {
+      server.httpServer?.once('listening', () => {
+        const addr = server.httpServer?.address()
+        const chosenPort = typeof addr === 'object' && addr ? addr.port : 'unknown'
+        const host = server.config.server?.host || 'localhost'
+        // eslint-disable-next-line no-console
+        console.log(`\nℹ️  Vite dev server running on http://${host}:${chosenPort}`)
+      })
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), portLogger()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
-    port: 5173,
+    port: 3000,
     host: true,
   },
   build: {
