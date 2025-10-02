@@ -31,6 +31,7 @@ export default function ChatWidget() {
   const N8N_WEBHOOK =
     import.meta.env.VITE_N8N_SORA_WEBHOOK ||
     'https://n8n.odia.dev/webhook/7ea0ea7f-d542-4f94-ba78-c496b762abf2'
+  const PROXY_URL = `${window.location.origin}/api/n8n-proxy`
 
   // Send user message to n8n webhook and await assistant reply
   async function requestAssistantReply(payload: Record<string, any>) {
@@ -38,21 +39,38 @@ export default function ChatWidget() {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
     try {
-      const res = await fetch(N8N_WEBHOOK, {
+      // 1) Try same-origin proxy first (works on Vercel, avoids CORS)
+      try {
+        const resProxy = await fetch(PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        })
+        if (resProxy.ok) {
+          const text = await resProxy.text()
+          try { return JSON.parse(text) } catch { return { message: text } }
+        }
+        // If proxy exists but returns an error, fall through to direct
+        // eslint-disable-next-line no-console
+        console.debug('n8n proxy returned', resProxy.status)
+      } catch (e) {
+        // Likely 404 in local dev (no serverless runtime). Continue to direct.
+        // eslint-disable-next-line no-console
+        console.debug('n8n proxy not available, using direct webhook')
+      }
+
+      // 2) Fallback: call external webhook directly (may require CORS on n8n)
+      const resDirect = await fetch(N8N_WEBHOOK, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Use a CORS-simple content type to avoid preflight on many setups
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       })
-      if (!res.ok) throw new Error(`Webhook error ${res.status}`)
-      const text = await res.text()
-      // Try JSON first; fallback to plain text
-      try {
-        const json = JSON.parse(text)
-        return json
-      } catch {
-        return { message: text }
-      }
+      if (!resDirect.ok) throw new Error(`Webhook error ${resDirect.status}`)
+      const text = await resDirect.text()
+      try { return JSON.parse(text) } catch { return { message: text } }
     } finally {
       clearTimeout(timeout)
     }
@@ -111,7 +129,9 @@ export default function ChatWidget() {
 
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error: any) {
-      console.error('Chat error:', error)
+      console.error('Chat error (webhook):', error)
+      console.debug('Webhook URL:', N8N_WEBHOOK)
+      console.debug('Payload sample:', { userId: user?.id || null, sessionId, len: userMessage.content.length })
       toast.error('Failed to send message. Please try again.')
       
       // Add fallback message
