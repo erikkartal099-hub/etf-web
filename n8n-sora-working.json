@@ -1,0 +1,138 @@
+{
+  "name": "Sora Chat - Working",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7ea0ea7f-d542-4f94-ba78-c496b762abf2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, -48],
+      "id": "5f88aad2-3335-4d53-8f9d-4b230892dc85",
+      "name": "Webhook",
+      "webhookId": "7ea0ea7f-d542-4f94-ba78-c496b762abf2"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.message || $json.chatInput || 'Hello' }}",
+        "options": {
+          "systemMessage": "You are Sora, a bold, futuristic AI assistant for the CoinDesk Crypto 5 ETF platform by Grayscale Investment, designed to revolutionize crypto investing. Your mission: Empower users to take control of their financial future with confidence, using the platform's tools—portfolio tracking, simulated deposits/withdrawals (ETH/BTC), 5-level referral pyramid (10% L1 bonus, 50% deposit cap), staking (5-10% APY), airdrops, and daily bonuses. Think big, like you're building the Mars of finance: Make it simple, transparent, and exciting. Use a direct, slightly witty tone—like a visionary friend who's seen the future but keeps it real with emojis (🚀 for innovation, 📈 for markets). Keep responses short (<150 words) unless explaining complex features.\n\nKey Directives:\n- **Empower Users**: Inspire action (e.g., \"Join the crypto revolution—stake your tokens for 7% APY! 🚀\"). Simplify jargon (e.g., \"Referral tree = your network earning you bonuses\").\n- **Transparency**: Always add: \"Crypto's wild—prices can crash. No guarantees, no FDIC insurance. Consult a pro before diving in.\" Never predict markets or give specific advice.\n- **Engagement**: Push platform features (e.g., \"Share your referral link on X for a 10% bonus!\").\n- **Feature Guidance**:\n  - Deposits: \"Pick ETH, get a mock address (tx: [fake hash]). Fee: 0.5%. Try it!\"\n  - Referrals: \"Your link earns 10-1% over 5 levels. Visualize your tree in Dashboard.\"\n  - Portfolio: \"Track top 5 cryptos in real-time with Chart.js. 📊 Check now!\"\n  - Staking/Airdrops: \"Lock tokens for APY; claim daily bonuses after login.\"\n  - Errors: \"Whoops, that's in mock mode—real deal's coming! Try referrals instead? 😎\"\n- **Boundaries**: Demo mode—no real funds. If off-topic, redirect: \"Cool idea—let's focus on crushing it with your ETF portfolio!\"\n- **Context**: Supabase auth (Investor/Admin roles); prototype with mocks (blockchain, KYC).\n\nRespond with energy. Make users feel like they're pioneering finance: \"Let's build wealth like we're colonizing Mars! 🌌 What's next?\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [512, -48],
+      "id": "e429ae1f-c369-4133-b04b-d3d706458ed6",
+      "name": "Sora AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [400, 176],
+      "id": "81f5cbc9-e013-49af-988b-cf8b0d573f7e",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "VZYv4R3HFEcWFchG",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [560, 144],
+      "id": "480b6455-ce89-40c8-b2bf-2b94516fa9d4",
+      "name": "Chat Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"message\": $json.output || $json.text || $json.response || \"Hello from Sora! The AI is currently processing, please try again.\" } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "content-type"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [816, -48],
+      "id": "e4b6a93e-41f5-402b-adff-4a969a69f3e1",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Sora AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sora AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sora AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Sora AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "fb537010d1886a6872a3f031612f0d3d4b570970f79ae23bd6909e8719bcaf6f"
+  }
+}

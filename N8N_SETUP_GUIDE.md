@@ -133,38 +133,35 @@ curl -X POST https://etf-web-mi7p.vercel.app/api/n8n-proxy \
 
 **In-app test:**
 1. Open: https://etf-web-mi7p.vercel.app
-2. Click chat widget (bottom-right)
 3. Send: "tell me about staking"
 4. Should see AI response (not "Workflow was started")
 
 ---
 
-## Architecture
+## Arc**Chat Widget → Proxy → Chat Trigger**
 
 ```
 Browser (Chat Widget)
-    ↓ POST /api/n8n-proxy
-Vercel Serverless Function (api/n8n-proxy.js)
-    ↓ POST https://n8n.odia.dev/webhook/...
-n8n Workflow
-    ├─ Webhook (receives message)
-    ├─ AI Agent (processes with Groq)
-    │   ├─ Groq Chat Model (llama3-70b-8192)
+    ↓ POST /api/n8n-chat
+Vercel Serverless Function (api/n8n-chat.js)
+    ↓ POST https://n8n.odia.dev/chat/<chatWebhookId>
+n8n Workflow (Chat Trigger)
+    ├─ chatTrigger (receives message)
+    ├─ Sora AI Agent (LangChain Agent)
+    │   ├─ Groq Chat Model (llama-3.1-8b-instant)
     │   └─ Chat Memory (10-message window)
-    └─ Respond to Webhook (returns JSON)
+    └─ chatRespond (returns JSON)
     ↓ {"message": "AI response"}
 Back to Browser
-```
-
----
-
 ## Files Reference
 
 | File | Purpose |
 |------|---------|
-| `n8n-sora-production.json` | Production-ready n8n workflow (import this) |
-| `api/n8n-proxy.js` | Vercel serverless proxy |
-| `frontend/src/components/ChatWidget.tsx` | Chat UI component |
+| `n8n-sora-production.json` | Webhook-based workflow (legacy) |
+| `n8n-sora-working.json` | Chat-trigger workflow (`chatTrigger` + `chatRespond`) |
+| `api/n8n-chat.js` | Vercel proxy for chat trigger |
+| `api/n8n-proxy.js` | Legacy webhook proxy (optional) |
+| `frontend/src/components/ChatWidget.tsx` | Chat UI (posts to `/api/n8n-chat`) |
 | `scripts/test-n8n-workflow.sh` | Automated test suite |
 | `N8N_SETUP_GUIDE.md` | This guide |
 

@@ -27,50 +27,30 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // n8n webhook configuration (env configurable with a safe fallback)
-  const N8N_WEBHOOK =
-    import.meta.env.VITE_N8N_SORA_WEBHOOK ||
-    'https://n8n.odia.dev/webhook/7ea0ea7f-d542-4f94-ba78-c496b762abf2'
-  const PROXY_URL = `${window.location.origin}/api/n8n-proxy`
+  // Sora chat proxy (always route through same-origin API)
+  const CHAT_PROXY = `${window.location.origin}/api/n8n-chat`
 
   // Send user message to n8n webhook and await assistant reply
   async function requestAssistantReply(payload: Record<string, any>) {
-    if (!N8N_WEBHOOK) throw new Error('Webhook URL not configured')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
     try {
-      // 1) Try same-origin proxy first (works on Vercel, avoids CORS)
-      try {
-        const resProxy = await fetch(PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        })
-        if (resProxy.ok) {
-          const text = await resProxy.text()
-          try { return JSON.parse(text) } catch { return { message: text } }
-        }
-        // If proxy exists but returns an error, fall through to direct
-        // eslint-disable-next-line no-console
-        console.debug('n8n proxy returned', resProxy.status)
-      } catch (e) {
-        // Likely 404 in local dev (no serverless runtime). Continue to direct.
-        // eslint-disable-next-line no-console
-        console.debug('n8n proxy not available, using direct webhook')
-      }
-
-      // 2) Fallback: call external webhook directly (may require CORS on n8n)
-      const resDirect = await fetch(N8N_WEBHOOK, {
+      const res = await fetch(CHAT_PROXY, {
         method: 'POST',
-        // Use a CORS-simple content type to avoid preflight on many setups
-        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       })
-      if (!resDirect.ok) throw new Error(`Webhook error ${resDirect.status}`)
-      const text = await resDirect.text()
-      try { return JSON.parse(text) } catch { return { message: text } }
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Chat proxy error ${res.status}: ${text}`)
+      }
+      const text = await res.text()
+      try {
+        return JSON.parse(text)
+      } catch {
+        return { message: text }
+      }
     } finally {
       clearTimeout(timeout)
     }
@@ -105,14 +85,16 @@ export default function ChatWidget() {
     setLoading(true)
 
     try {
-      // Send to n8n webhook and expect a response
+      // Send to chat trigger via proxy and expect a response
+      const recentHistory = [...messages, userMessage].slice(-10)
       const resp = await requestAssistantReply({
         source: 'sora-widget',
         event: 'chat',
-        userId: user?.id || null,
-        sessionId,
+        question: userMessage.content,
         message: userMessage.content,
-        history: messages,
+        sessionId,
+        userId: user?.id || null,
+        history: recentHistory,
         path: window.location.pathname,
         origin: window.location.origin,
       })
@@ -130,7 +112,7 @@ export default function ChatWidget() {
       setMessages((prev) => [...prev, assistantMessage])
     } catch (error: any) {
       console.error('Chat error (webhook):', error)
-      console.debug('Webhook URL:', N8N_WEBHOOK)
+      console.debug('Chat proxy URL:', CHAT_PROXY)
       console.debug('Payload sample:', { userId: user?.id || null, sessionId, len: userMessage.content.length })
       toast.error('Failed to send message. Please try again.')
       
