@@ -55,11 +55,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        // If profile doesn't exist, create it
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating one...')
+          
+          // Get auth user data
+          const { data: authUser } = await supabase.auth.getUser()
+          
+          if (authUser?.user) {
+            // Create profile
+            const { data: newProfile, error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: userId,
+                email: authUser.user.email,
+                full_name: authUser.user.user_metadata?.full_name || authUser.user.email,
+              })
+              .select()
+              .single()
+            
+            if (createError) {
+              console.error('Failed to create profile:', createError)
+              throw createError
+            }
+            
+            setUser(newProfile)
+            toast.success('Profile created successfully')
+            return
+          }
+        }
+        throw error
+      }
+      
       setUser(data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading user profile:', error)
-      toast.error('Failed to load user profile')
+      const message = error.code === 'PGRST301' 
+        ? 'Database permission error. Please contact support.' 
+        : 'Failed to load user profile. Please try refreshing the page.'
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -105,6 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
+          // Send email verification to our callback route
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             full_name: fullName,
             referred_by: referrerId, // Pass referrer info in metadata

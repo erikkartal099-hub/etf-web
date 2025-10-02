@@ -19,12 +19,19 @@ export default function AuthCallback() {
       const params = new URLSearchParams(window.location.search)
       const error = params.get('error')
       const errorDescription = params.get('error_description')
+      const code = params.get('code')
 
       if (error) {
         throw new Error(errorDescription || error)
       }
 
-      // Get the session from URL hash
+      // If we have a PKCE code, try to exchange it explicitly (supabase-js v2)
+      if (code && typeof (supabase.auth as any).exchangeCodeForSession === 'function') {
+        const { error: exchangeError } = await (supabase.auth as any).exchangeCodeForSession({ code })
+        if (exchangeError) throw exchangeError
+      }
+
+      // Get the session (after possible exchange)
       const { data, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError) {
@@ -48,7 +55,8 @@ export default function AuthCallback() {
             throw setSessionError
           }
         } else {
-          throw new Error('No session or access token found')
+          // If still no session and no hash token, surface a clearer message
+          throw new Error('No session found. If you arrived from email, the link may have expired or already been used. Try signing in again.')
         }
       }
 

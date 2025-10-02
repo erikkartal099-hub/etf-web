@@ -152,7 +152,11 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-3 bg-gradient-primary text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center space-x-2"
+              className="w-full px-6 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2
+                         text-white bg-blue-600 hover:bg-blue-700 focus:outline-none
+                         focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white
+                         dark:focus:ring-offset-gray-800 disabled:opacity-50"
+              aria-label="Create account"
             >
               {loading ? (
                 <div className="spinner"></div>

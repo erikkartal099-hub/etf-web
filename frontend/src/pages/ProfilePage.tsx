@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import { User, Mail, Key, Shield, Bell, Save, Edit2, Check } from 'lucide-react'
+import { User, Mail, Key, Shield, Bell, Save, Edit2, Check, RefreshCw, PlayCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 
@@ -19,6 +19,10 @@ export default function EnhancedProfilePage() {
     confirmPassword: '',
   })
 
+  // KYC local state
+  const [kycStatus, setKycStatus] = useState<string | null>(user?.kyc_status || null)
+  const [kycLoading, setKycLoading] = useState(false)
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -33,7 +37,43 @@ export default function EnhancedProfilePage() {
     } finally {
       setLoading(false)
     }
+
+  // KYC actions
+  const startKyc = async () => {
+    if (!user?.id) return
+    try {
+      setKycLoading(true)
+      const { data, error } = await supabase.functions.invoke('kyc-proxy', {
+        body: { userId: user.id, action: 'start' },
+      })
+      if (error) throw error
+      toast.success('KYC started')
+      setKycStatus('pending')
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to start KYC')
+    } finally {
+      setKycLoading(false)
+    }
   }
+
+  const refreshKyc = async () => {
+    if (!user?.id) return
+    try {
+      setKycLoading(true)
+      const { data, error } = await supabase.functions.invoke('kyc-proxy', {
+        body: { userId: user.id, action: 'status' },
+      })
+      if (error) throw error
+      const status = (data as any)?.status || 'unknown'
+      setKycStatus(status)
+      toast.success(`KYC status: ${status}`)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to refresh KYC status')
+    } finally {
+      setKycLoading(false)
+    }
+  }
+
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -148,20 +188,38 @@ export default function EnhancedProfilePage() {
                 <div className="flex items-center space-x-2">
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      user?.kyc_status === 'approved'
+                      (kycStatus || user?.kyc_status) === 'approved' || (kycStatus || user?.kyc_status) === 'verified'
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                        : user?.kyc_status === 'pending'
+                        : (kycStatus || user?.kyc_status) === 'pending' || (kycStatus || user?.kyc_status) === 'reviewing'
                         ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
                     }`}
                   >
-                    {user?.kyc_status || 'Not Started'}
+                    {kycStatus || user?.kyc_status || 'Not Started'}
                   </span>
-                  {user?.kyc_status === 'pending' && (
+                  {(kycStatus || user?.kyc_status) === 'pending' && (
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Under review
                     </span>
                   )}
+                </div>
+                <div className="mt-3 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={startKyc}
+                    disabled={kycLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <PlayCircle className="w-4 h-4" /> Start / Resume KYC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={refreshKyc}
+                    disabled={kycLoading}
+                    className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-4 h-4" /> Refresh Status
+                  </button>
                 </div>
               </div>
 
