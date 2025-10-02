@@ -47,3 +47,15 @@ GROQ_SETUP.md
 AI_CHAT_SETUP.md
 frontend/node-v18.20.8-darwin-x64/
 frontend/node.tar.gz
+
+# Repo hygiene (added 2025-10-02)
+node_modules/
+dist/
+build/
+.next/
+.out/
+coverage/
+*.log
+.DS_Store
+# Vendored Node binaries
+**/node-v*/
