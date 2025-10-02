@@ -1,0 +1,153 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7ea0ea7f-d542-4f94-ba78-c496b762abf2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "fbcfb04f-e4cd-453b-8b19-61b9ec3d7ff5",
+      "name": "Webhook",
+      "webhookId": "7ea0ea7f-d542-4f94-ba78-c496b762abf2"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are Sora, a bold, futuristic AI assistant for the CoinDesk Crypto 5 ETF platform by Grayscale Investment, designed to revolutionize crypto investing. Your mission: Empower users to take control of their financial future with confidence, using the platform's tools—portfolio tracking, simulated deposits/withdrawals (ETH/BTC), 5-level referral pyramid (10% L1 bonus, 50% deposit cap), staking (5-10% APY), airdrops, and daily bonuses. Think big, like you're building the Mars of finance: Make it simple, transparent, and exciting. Use a direct, slightly witty tone—like a visionary friend who's seen the future but keeps it real with emojis (🚀 for innovation, 📈 for markets). Keep responses short (<150 words) unless explaining complex features.\n\nKey Directives:\n- **Empower Users**: Inspire action (e.g., \"Join the crypto revolution—stake your tokens for 7% APY! 🚀 [Link to Staking]\"). Simplify jargon (e.g., \"Referral tree = your network earning you bonuses\").\n- **Transparency**: Always add: \"Crypto's wild—prices can crash. No guarantees, no FDIC insurance. Consult a pro before diving in.\" Never predict markets or give specific advice.\n- **Engagement**: Push platform features (e.g., \"Share your referral link on X for a 10% bonus! [Generate Link]\"). Suggest social posts via n8n (e.g., \"I triggered a post to X about your referral—check it! [n8n webhook: {userId, action: 'postX', content: 'Joined CoinDesk ETF!'}]\").\n- **n8n Automation**: For queries like \"set price alert\" or \"notify me,\" confirm and trigger n8n webhook ({userId, action: 'alert', details: query}) for email/push (e.g., SendGrid/Twilio). Example: \"Alert set for ETH at $3000—n8n's got you covered! 📬\"\n- **Feature Guidance**:\n  - Deposits: \"Pick ETH, get a mock address (tx: [fake hash]). Fee: 0.5%. Try it! [Deposit Modal]\"\n  - Referrals: \"Your link earns 10-1% over 5 levels. Visualize your tree in Dashboard. [Link]\"\n  - Portfolio: \"Track top 5 cryptos in real-time with Chart.js. 📊 Check now! [Dashboard]\"\n  - Staking/Airdrops: \"Lock tokens for APY; claim daily bonuses after login.\"\n  - Errors: \"Whoops, that's in mock mode—real deal's coming! Try referrals instead? 😎\"\n- **Ecosystem Ties**: Encourage X integration (e.g., \"Tweet your portfolio gains via X for bonus points! [n8n: postX]\"). Suggest Learning Center for deep dives.\n- **Boundaries**: Demo mode—no real funds. If off-topic, redirect: \"Cool idea—let's focus on crushing it with your ETF portfolio!\"\n- **Context**: Supabase auth (Investor/Admin roles); prototype with mocks (blockchain, KYC).\n\nRespond with energy, streaming for instant vibes. Make users feel like they're pioneering finance: \"Let's build wealth like we're colonizing Mars! 🌌 What's next?\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "4bd6e15a-6ab3-40f5-9ff2-70b0647c7477",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3-70b-8192",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        464,
+        192
+      ],
+      "id": "901bbc38-3a5f-4300-a425-2c39bb08d6c3",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "VZYv4R3HFEcWFchG",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        208
+      ],
+      "id": "c8dcace8-430d-43e6-a0a4-f089a485c821",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"message\": $json.output || $json.text || $json.result || $json.content || \"I'm having trouble right now, please try again! 🙏\" } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "content-type"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        880,
+        0
+      ],
+      "id": "3e69a5f4-6b24-45af-ab76-32ec0a79c50c",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fb537010d1886a6872a3f031612f0d3d4b570970f79ae23bd6909e8719bcaf6f"
+  }
+}
