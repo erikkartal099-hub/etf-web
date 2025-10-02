@@ -23,18 +23,6 @@ if (GA_TRACKING_ID) {
   }
 }
 
-// Optional Sentry hint (no package installed by default)
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
-if (SENTRY_DSN) {
-  // eslint-disable-next-line no-console
-  console.info(
-    '\nSentry DSN detected. To enable Sentry later, install @sentry/react and initialize it in main.tsx.\n' +
-      'Example:\n' +
-      "  import * as Sentry from '@sentry/react'\n" +
-      '  Sentry.init({ dsn: import.meta.env.VITE_SENTRY_DSN })\n'
-  )
-}
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
