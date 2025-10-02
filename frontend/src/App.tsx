@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { PortfolioProvider } from '@/contexts/PortfolioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import ChatWidget from '@/components/ChatWidget'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Pages
 import LandingPage from '@/pages/ProfessionalLandingPage'
@@ -12,6 +13,7 @@ import LoginPage from '@/pages/LoginPage'
 import SignUpPage from '@/pages/SignUpPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
+import AuthCallback from '@/pages/AuthCallback'
 import DashboardPage from '@/pages/EnhancedDashboardPage'
 import PortfolioPage from '@/pages/PortfolioPage'
 import DepositPage from '@/pages/DepositPage'
@@ -73,13 +75,15 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <PortfolioProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<LandingPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <PortfolioProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
               <Route
                 path="/login"
                 element={
@@ -199,6 +203,7 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

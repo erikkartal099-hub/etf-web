@@ -2,18 +2,59 @@
 
 import { createClient } from '@supabase/supabase-js'
 
+// Environment validation with detailed error messaging
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
+  const missingVars = []
+  if (!supabaseUrl) missingVars.push('VITE_SUPABASE_URL')
+  if (!supabaseAnonKey) missingVars.push('VITE_SUPABASE_ANON_KEY')
+  
+  const errorMsg = `
+    ❌ Missing required environment variables: ${missingVars.join(', ')}
+    
+    To fix this:
+    1. Create a .env.local file in the frontend directory
+    2. Copy contents from .env.example
+    3. Add your Supabase credentials from https://app.supabase.com
+    
+    Example:
+    VITE_SUPABASE_URL=https://your-project.supabase.co
+    VITE_SUPABASE_ANON_KEY=your-anon-key-here
+  `
+  
+  console.error(errorMsg)
+  
+  // In development, show a helpful error message
+  if (import.meta.env.DEV) {
+    throw new Error(errorMsg)
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client with robust configuration
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    // Redirect URL for auth callback
+    flowType: 'pkce',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  },
+  global: {
+    headers: {
+      'x-application-name': 'coindesk-etf',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
   },
 })
 
